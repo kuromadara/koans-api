@@ -31,19 +31,45 @@ def koans_count(request):
 
 def get_all_koans(request):
     if request.method == 'GET':
-        koans = Koan.objects.all()
-        koans_serializer = KoanSerializer(koans, many=True)
-        return JsonResponse(koans_serializer.data, safe=False)
+        try:
+            koans = Koan.objects.all()
+            koans_serializer = KoanSerializer(koans, many=True)
+            data = koans_serializer.data
+
+            response = {'status': 'success', 'data': data}
+            if 'error_messages' in data:
+                data.pop('error_messages')
+        except Exception as e:
+            response = {'status': 'error', 'data': [], 'error_messages': [str(e)]}
+
+        # remove error_messages field for successful requests
+        if response['status'] == 'success':
+            response.pop('error_messages', None)
+
+        return JsonResponse(response, safe=False)
 
 def get_koan(request, id):
     try:
         koan = Koan.objects.get(id=id)
-    except Koan.DoesNotExist:
-        return JsonResponse({'message': 'The koan does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        koan_serializer = KoanSerializer(koan)
+        data = koan_serializer.data
+        response = {'status': 'success', 'data': data}
+    except Koan.DoesNotExist as e:
+        response = {'status': 'error', 'error_messages': [str(e)]}
 
-    if request.method == 'GET':
-        serializer = KoanSerializer(koan)
-        return JsonResponse(serializer.data)
+        # set status code based on response status
+        status_code = status.HTTP_404_NOT_FOUND
+        return JsonResponse(response, status=status_code, safe=False)
+
+    response.pop('error_messages', None)
+
+    # set status code based on response status
+    status_code = status.HTTP_200_OK
+
+
+    return JsonResponse(response, status=status_code, safe=False)
+
+
 
 # @csrf_exempt
 def create_koan(request):
