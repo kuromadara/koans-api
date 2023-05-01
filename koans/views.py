@@ -26,8 +26,17 @@ class KoanCreateView(CreateView):
 
 
 def koans_count(request):
-    count = Koan.objects.count()
-    return JsonResponse({'count': count})
+
+    try:
+        count = Koan.objects.count()
+        data = {'count': count}
+
+        response = {'status': 'success', 'data': data}
+    except Exception as e:
+        response = {'status': 'error', 'error_messages': [str(e)]}
+        return JsonResponse(response)
+
+    return JsonResponse(response)
 
 def get_all_koans(request):
     if request.method == 'GET':
@@ -70,13 +79,18 @@ def get_koan(request, id):
     return JsonResponse(response, status=status_code, safe=False)
 
 
-
-# @csrf_exempt
+@csrf_exempt
 def create_koan(request):
     if request.method == 'POST':
-        koan_data = JSONParser().parse(request)
+        # Check if the request body is empty
+        if not request.body:
+            return JsonResponse({'status': 'error', 'error_message': 'Empty request body'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            koan_data = JSONParser().parse(request)
+        except:
+            return JsonResponse({'status': 'error', 'error_message': 'Invalid request body format'}, status=status.HTTP_400_BAD_REQUEST)
         koan_serializer = KoanSerializer(data=koan_data)
         if koan_serializer.is_valid():
             koan_serializer.save()
-            return JsonResponse(koan_serializer.data, status=status.HTTP_201_CREATED)
-        return JsonResponse(koan_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({'status': 'success', 'data': koan_serializer.data}, status=status.HTTP_201_CREATED)
+        return JsonResponse({'status': 'error', 'error_message': koan_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)

@@ -1,5 +1,5 @@
 from django.db import models
-
+from django.utils import timezone
 
 # Create your models here.
 
@@ -16,8 +16,9 @@ class Koan(models.Model):
     title = models.CharField(max_length=100)
     koan = models.TextField(max_length=16777215)
     status = models.IntegerField(
-        choices=STATUS
+        choices=STATUS,
+        default=1
     )
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(default=timezone.now)
     # updated_at = models.DateTimeField()
     # deleted_at = models.DateTimeField(default=None, null=True)
